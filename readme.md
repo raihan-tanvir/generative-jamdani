@@ -33,3 +33,8 @@ This project is an interactive web app that uses [ml5.js](https://ml5js.org/) an
 
 - Built with [ml5.js](https://ml5js.org/) and [p5.js](https://p5js.org/)
 - Inspired by the traditional Jamdani weaving art.
+
+## License
+
+This project and its trained model are licensed under the
+[Creative Commons Attribution 4.0 International License (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/).
