@@ -1,69 +1,84 @@
 const SIZE = 256;
-let inputImg, inputCanvas, output, statusMsg, pix2pix, randomBtn, clearBtn, transferBtn, currentColor, currentStroke;
+let inputImg,
+  inputCanvas,
+  output,
+  statusMsg,
+  pix2pix,
+  randomBtn,
+  clearBtn,
+  transferBtn,
+  currentStroke;
 
+let presets = [];
+
+function preload() {
+  for (let i = 1; i <= 10; i++) {
+    presets.push(loadImage(`images/input_${i}.png`));
+  }
+}
 
 function setup() {
-  // Create a canvas
+  // Create a canvas for drawing
   inputCanvas = createCanvas(SIZE, SIZE);
-  inputCanvas.class('border-box').parent('input');
+  inputCanvas.class("border-box").parent("input");
 
-  inputImg = loadImage('images/input_1.png', drawImage);
+  // Load default preset image
+  inputImg = presets[4]; // index 4 is input_5.png
+  drawImage();
 
-  output = select('#output');
-  statusMsg = select('#status');
+  output = select("#output");
+  statusMsg = select("#status");
 
-  currentColor = color(0,0,0);
   currentStroke = 1;
-  select('#red').mousePressed(() => currentColor = color(255, 0, 0));
-  select('#blue').mousePressed(() => currentColor = color(0, 0, 255));
-  select('#size').mouseReleased(() => currentStroke = select('#size').value());
-
-  transferBtn = select('#transferBtn');
-
-  clearBtn = select('#clearBtn');
-  clearBtn.mousePressed(function() {
-    clearCanvas();
-    background(255, 255, 255);
-	statusMsg.html('Draw your own sketch or select a preset one!');
-    output.elt.src="images/blank.png";
-
+  select("#size").mouseReleased(() => {
+    currentStroke = Number(select("#size").value());
   });
 
-  randomBtn = select('#randomBtn');
-  randomBtn.mousePressed(function() {
-    let src =['images/input_1.png', 'images/input_2.png', 'images/input_3.png', 'images/input_4.png', 'images/input_5.png',
-	'images/input_6.png','images/input_7.png','images/input_8.png','images/input_9.png','images/input_10.png',
-	'images/input_11.png','images/input_12.png','images/input_13.png','images/input_14.png','images/input_15.png',
-	'images/input_16.png','images/input_17.png','images/input_18.png','images/input_19.png','images/input_20.png'];
-    let index = int(random(0, 20));
-    inputImg = loadImage(src[index], drawImage);
-	output.elt.src="images/blank.png";
-	statusMsg.html('Random Sketch Selected');
+  transferBtn = select("#transferBtn");
+  transferBtn.attribute("disabled", ""); // Disabled initially
+
+  clearBtn = select("#clearBtn");
+  clearBtn.mousePressed(() => {
+    clearCanvas();
+    background(255);
+    statusMsg.html("Draw your own sketch or select a preset one!");
+    output.elt.src = "images/blank.png";
+  });
+
+  randomBtn = select("#randomBtn");
+  randomBtn.mousePressed(() => {
+    let index = int(random(presets.length));
+    inputImg = presets[index];
+    drawImage();
+    output.elt.src = "images/blank.png";
+    statusMsg.html("Random sketch selected.");
   });
 
   stroke(0);
   pixelDensity(1);
 
-  pix2pix = ml5.pix2pix('model/enhanced_v.pict', modelLoaded);
+  // Load the pix2pix model and enable Generate button when ready
+  pix2pix = ml5.pix2pix("model/enhanced_v.pict", modelLoaded);
 }
 
 function draw() {
   if (mouseIsPressed) {
-    stroke(currentColor);
-    strokeWeight(currentStroke)
+    stroke(0); // Fixed black color
+    strokeWeight(currentStroke);
     line(mouseX, mouseY, pmouseX, pmouseY);
   }
 }
 
 function modelLoaded() {
-  statusMsg.html('Model Loaded!');
-  transferBtn.mousePressed(function() {
+  statusMsg.html("Model loaded. You can now generate motifs.");
+  transferBtn.removeAttribute("disabled");
+  transferBtn.mousePressed(() => {
     transfer();
   });
 }
 
 function drawImage() {
-  image(inputImg, 0, 0,SIZE, SIZE);
+  image(inputImg, 0, 0, SIZE, SIZE);
 }
 
 function clearCanvas() {
@@ -71,16 +86,25 @@ function clearCanvas() {
 }
 
 function transfer() {
-	statusMsg.html('Generating Jamdani Motif........!');
-	const canvasElement = select('canvas').elt;
+  statusMsg.html(
+    "Generating the Jamdani motif. This may take a few seconds..."
+  );
+  select("#spinner").show();
+  transferBtn.attribute("disabled", "");
 
-	pix2pix.transfer(canvasElement, function(err, result) {
+  const canvasElement = select("canvas").elt;
+
+  pix2pix.transfer(canvasElement, (err, result) => {
+    select("#spinner").hide();
+    transferBtn.removeAttribute("disabled");
 
     if (err) {
-      console.log(err);
+      console.error(err);
+      statusMsg.html("An error occurred during generation.");
+      return;
     }
     if (result && result.src) {
-      statusMsg.html('Done!');
+      statusMsg.html("Motif generation completed.");
       output.elt.src = result.src;
     }
   });
